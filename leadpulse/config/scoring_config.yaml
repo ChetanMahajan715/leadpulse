@@ -1,0 +1,191 @@
+# LeadPulse scoring configuration: the single source of truth for every weight,
+# keyword and threshold. The engine reads this file; no numbers live in code.
+# Context: the seller offers B2B business software (CRM / automation) to SMB and
+# mid-market companies, primarily in India.
+
+scoring_version: "1.0.0"
+
+# Share of a parameter's max given when its input field is blank (rounded down).
+missing_neutral_ratio: 0.3
+
+# A factor counts as "positive" when it earns at least this share of its max.
+positive_ratio: 0.6
+
+classification:
+  hot: 75     # score >= 75
+  warm: 45    # 45 <= score < 75, below that is Cold
+
+parameters:
+  decision_authority:
+    label: Decision authority
+    field: job_title
+    max: 20
+    unrecognised_points: 7
+    # Checked in this order, first match wins. Entry level goes first so that
+    # "Engineering Intern" is not read as an engineer, and VP goes before the
+    # top tier so that "Vice President" is not read as "President".
+    tiers:
+      - name: Entry level
+        points: 3
+        keywords: [intern, internship, student, trainee, junior, fresher, apprentice]
+      - name: VP / Head
+        points: 17
+        keywords: [vp, vice president, svp, avp, head, head of]
+      - name: Founder / C-level / Director
+        points: 20
+        keywords: [founder, co-founder, cofounder, owner, ceo, cto, cfo, coo, cmo, cio, cxo,
+                   chief, md, managing director, president, director, partner, proprietor]
+      - name: Manager / Team lead
+        points: 12
+        keywords: [manager, team lead, lead, supervisor, gm]
+      - name: Individual contributor
+        points: 7
+        keywords: [senior, specialist, executive, analyst, engineer, developer, consultant,
+                   associate, officer, coordinator, representative, sales rep, designer]
+
+  buying_intent:
+    label: Buying intent
+    field: requirement
+    max: 25
+    base: 5                 # any non-empty requirement
+    short_text_words: 3     # fewer words than this and no keyword ...
+    short_text_points: 3    # ... scores this in total
+    signals:
+      solution:
+        points: 10
+        keywords: [crm, software, erp, automation, automate, platform, tool, tools, lead management,
+                   leads, sales, system, solution, app, dashboard, pipeline, integration]
+      urgency:
+        points: 5
+        keywords: [urgent, urgently, asap, immediately, this week, this month, soon, quickly,
+                   right away, at the earliest]
+      budget:
+        points: 3
+        keywords: [budget, "₹", rs, inr, lakh, lakhs, crore, "$", usd, pricing approved, allocated]
+      action:
+        points: 2
+        keywords: [demo, quote, quotation, pricing, price, call, trial, proposal, meeting]
+
+  company_size:
+    label: Company size
+    field: company_size
+    max: 15
+    unrecognised_points: 4
+    # A range uses its midpoint; "N+" means more than N. First bucket whose
+    # upper bound (inclusive) fits wins; upper: null means no upper bound.
+    buckets:
+      - {upper: 10, points: 5, name: "1-10"}
+      - {upper: 50, points: 10, name: "11-50"}
+      - {upper: 200, points: 15, name: "51-200"}
+      - {upper: 1000, points: 12, name: "201-1000"}
+      - {upper: null, points: 9, name: "1000+"}
+
+  industry_fit:
+    label: Industry fit
+    field: industry
+    max: 10
+    other_points: 3
+    tiers:
+      - name: High fit
+        points: 10
+        keywords: [it, it services, information technology, software, saas, technology, tech,
+                   e-commerce, ecommerce, fintech, real estate, education, edtech, healthcare,
+                   health, consulting, marketing, agency, advertising, digital]
+      - name: Medium fit
+        points: 6
+        keywords: [manufacturing, retail, logistics, supply chain, finance, financial, banking,
+                   insurance, hospitality, hotel, travel, media, entertainment]
+
+  lead_source:
+    label: Lead source
+    field: lead_source
+    max: 10
+    unrecognised_points: 3
+    tiers:
+      - name: Referral
+        points: 10
+        keywords: [referral, referred, partner referral]
+      - name: Inbound (website / demo request)
+        points: 9
+        keywords: [website, inbound, form, demo request, contact form, organic, google]
+      - name: Event / webinar
+        points: 7
+        keywords: [event, webinar, conference, trade show, expo, meetup]
+      - name: LinkedIn / social
+        points: 6
+        keywords: [linkedin, social, facebook, instagram, twitter, x.com, youtube]
+      - name: Email campaign
+        points: 5
+        keywords: [email campaign, email, newsletter, mailer]
+      - name: Cold outreach / purchased list
+        points: 3
+        keywords: [cold, outreach, cold call, purchased, list, database, other]
+
+  contact_quality:
+    label: Contact & data quality
+    max: 10
+    checks:
+      valid_email: 2
+      business_email: 3
+      domain_match: 2
+      valid_phone: 3
+
+  location_fit:
+    label: Market / location fit
+    field: location
+    max: 10
+    unrecognised_points: 6
+    tiers:
+      - name: Tier-1 Indian metro
+        points: 10
+        keywords: [bangalore, bengaluru, mumbai, bombay, delhi, new delhi, ncr, gurgaon, gurugram,
+                   noida, hyderabad, chennai, pune, kolkata]
+      - name: Other Indian city
+        points: 7
+        keywords: [india, ahmedabad, jaipur, lucknow, indore, bhopal, nagpur, surat, vadodara,
+                   chandigarh, kochi, cochin, coimbatore, mysore, mysuru, visakhapatnam, vizag,
+                   patna, bhubaneswar, thiruvananthapuram, trivandrum, nashik, rajkot, ludhiana,
+                   goa, mangalore, madurai, dehradun, guwahati, ranchi, raipur, kanpur, varanasi,
+                   karnataka, maharashtra, tamil nadu, kerala, gujarat, rajasthan, telangana,
+                   andhra pradesh, west bengal, uttar pradesh, madhya pradesh, punjab, haryana]
+      - name: Outside India
+        points: 6
+        keywords: [usa, united states, us, uk, united kingdom, london, new york, san francisco,
+                   dubai, uae, singapore, australia, sydney, canada, toronto, germany, berlin,
+                   france, paris, japan, tokyo, netherlands, amsterdam, saudi, riyadh, qatar,
+                   doha, malaysia, kuala lumpur, nepal, sri lanka, bangladesh, south africa]
+
+data_quality:
+  phone_region: IN
+  free_email_domains: [gmail.com, googlemail.com, yahoo.com, yahoo.co.in, yahoo.in, outlook.com,
+                       hotmail.com, live.com, msn.com, icloud.com, me.com, aol.com, rediffmail.com,
+                       protonmail.com, proton.me, gmx.com, mail.com, yandex.com, zohomail.in]
+  placeholder_email_domains: [example.com, example.org, example.net, example.in, test.com, test.in,
+                              mailinator.com, tempmail.com, temp-mail.org, 10minutemail.com,
+                              guerrillamail.com, yopmail.com, sharklasers.com, trashmail.com,
+                              fakemail.com, dispostable.com, throwawaymail.com, domain.com]
+
+confidence:
+  start: 100
+  critical_fields: [job_title, requirement, company_size]   # plus "both email and phone missing"
+  missing_critical: 20
+  missing_other: 8
+  unrecognised: 5
+  flag: 5
+  labels:
+    high: 80     # >= 80
+    medium: 50   # 50-79, below that is Low
+
+quality_labels:
+  insufficient_below: 30
+  hot_confident: Sales-ready, high-quality lead
+  hot_low_confidence: High potential, verify details first
+  warm: Promising lead, needs nurturing
+  cold: Low fit / low intent lead
+  insufficient: Insufficient data to judge
+
+next_actions:
+  Hot: Call within 24 hours and offer a product demo
+  Warm: Send a personalised email with a relevant case study; follow up in 3-5 days
+  Cold: Add to a nurture email campaign; re-evaluate in 30 days
+  verify_prefix: Verify contact details
