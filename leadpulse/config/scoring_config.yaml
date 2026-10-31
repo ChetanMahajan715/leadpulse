@@ -84,7 +84,8 @@ parameters:
     label: Industry fit
     field: industry
     max: 10
-    other_points: 3
+    unrecognised_points: 3
+    flag_unrecognised: false   # "other industry" is a valid low-fit answer, not an unknown value
     tiers:
       - name: High fit
         points: 10

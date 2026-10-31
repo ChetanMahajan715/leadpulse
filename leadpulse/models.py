@@ -24,6 +24,21 @@ FIELD_LABELS: dict[str, str] = {
 
 Classification = Literal["Hot", "Warm", "Cold"]
 
+# The sample lead from the brief (also the UI's "Load sample lead").
+SAMPLE_LEAD_FIELDS: dict[str, str] = {
+    "name": "Rahul Sharma",
+    "company": "ABC Technologies",
+    "website": "www.abctechnologies.com",
+    "job_title": "Founder",
+    "industry": "IT Services",
+    "location": "Bangalore",
+    "company_size": "50–100 Employees",
+    "lead_source": "Website",
+    "requirement": "Looking for CRM software",
+    "email": "rahul@example.com",
+    "phone": "+91 9876543210",
+}
+
 
 class LeadInput(BaseModel):
     """Raw lead as typed by a user or read from a CSV row. Every field is optional."""
