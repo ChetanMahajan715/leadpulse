@@ -1,0 +1,15 @@
+# LeadPulse default theme (light)
+[theme]
+base = "light"
+primaryColor = "#4F46E5"            # Indigo: buttons, sliders, links
+backgroundColor = "#FFFFFF"         # Page background
+secondaryBackgroundColor = "#F1F5F9" # Sidebar, input boxes, cards
+textColor = "#0F172A"               # Navy text
+font = "sans serif"
+
+# Dark version: swap the values above with these if you want dark as the default
+# base = "dark"
+# primaryColor = "#6366F1"
+# backgroundColor = "#0F172A"
+# secondaryBackgroundColor = "#1E293B"
+# textColor = "#F8FAFC"

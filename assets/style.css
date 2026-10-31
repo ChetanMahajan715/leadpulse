@@ -1,0 +1,41 @@
+/* LeadPulse UI styles: load in Streamlit with
+   st.markdown(f"<style>{open('assets/style.css').read()}</style>", unsafe_allow_html=True) */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --lp-indigo: #4F46E5;
+  --lp-navy:   #0F172A;
+  --lp-slate:  #64748B;
+  --lp-light:  #F1F5F9;
+  --lp-hot:    #EF4444;
+  --lp-warm:   #F59E0B;
+  --lp-cold:   #3B82F6;
+  --lp-good:   #16A34A;
+  --lp-bad:    #DC2626;
+}
+
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+/* Big score number */
+.lp-score { font-size: 3.5rem; font-weight: 700; line-height: 1; }
+.lp-score small { font-size: 1.25rem; color: var(--lp-slate); font-weight: 500; }
+
+/* Hot / Warm / Cold badge */
+.lp-badge {
+  display: inline-block; padding: 4px 14px; border-radius: 999px;
+  font-weight: 600; font-size: 0.9rem; color: #fff;
+}
+.lp-hot  { background: var(--lp-hot); }
+.lp-warm { background: var(--lp-warm); }
+.lp-cold { background: var(--lp-cold); }
+
+/* Result card */
+.lp-card {
+  border: 1px solid #E2E8F0; border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 12px; background: #fff;
+}
+
+/* Positive / negative factor lines */
+.lp-plus  { color: var(--lp-good); font-weight: 500; }
+.lp-minus { color: var(--lp-bad);  font-weight: 500; }
