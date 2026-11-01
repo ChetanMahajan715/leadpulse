@@ -113,7 +113,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 **2. Install and run**
 
 ```bash
-git clone https://github.com/<your-username>/leadpulse.git
+git clone https://github.com/ChetanMahajan715/leadpulse.git
 cd leadpulse
 uv sync                      # creates .venv with Python 3.12 and all dependencies
 cp .env.example .env         # Windows: copy .env.example .env
@@ -170,7 +170,7 @@ leadpulse/
 │   └── bulk.py                 CSV validation + batch scoring
 ├── data/                       lead_template.csv, sample_leads.csv
 ├── tests/                      107 pytest tests (cases.py holds the sample leads)
-├── docs/                       METHODOLOGY.md, TEST_CASES.md, DEMO_SCRIPT.md, screenshots/
+├── docs/                       METHODOLOGY.md, TEST_CASES.md, screenshots/
 ├── assets/                     brand kit: logos, icon, style.css
 ├── .streamlit/config.toml      brand theme
 ├── pyproject.toml  uv.lock  requirements.txt  .env.example
