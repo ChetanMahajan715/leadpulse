@@ -170,7 +170,7 @@ leadpulse/
 │   └── bulk.py                 CSV validation + batch scoring
 ├── data/                       lead_template.csv, sample_leads.csv
 ├── tests/                      107 pytest tests (cases.py holds the sample leads)
-├── docs/                       METHODOLOGY.md, TEST_CASES.md, screenshots/
+├── docs/                       METHODOLOGY.md, TEST_CASES.md, DEMO_SCRIPT.md, screenshots/
 ├── assets/                     brand kit: logos, icon, style.css
 ├── .streamlit/config.toml      brand theme
 ├── pyproject.toml  uv.lock  requirements.txt  .env.example
