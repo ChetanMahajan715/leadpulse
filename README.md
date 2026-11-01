@@ -7,7 +7,6 @@
 <p align="center"><b>Know which leads are alive.</b><br>AI-powered, explainable lead scoring</p>
 
 <p align="center">
-  <a href="#">Live demo (coming soon)</a> ·
   <a href="docs/METHODOLOGY.md">Scoring methodology</a> ·
   <a href="docs/TEST_CASES.md">Test cases</a>
 </p>
@@ -89,7 +88,7 @@ The dependency map was checked against the code with [graphify](https://github.c
 | Tool | Why |
 |---|---|
 | Python 3.12 + **uv** | Fast, reproducible installs; everything lives in the project's own `.venv` |
-| **Streamlit** | A clean, interactive UI in pure Python, free hosting on Streamlit Community Cloud |
+| **Streamlit** | A clean, interactive UI in pure Python |
 | **Pydantic** | Typed models for leads and results; strict validation of the LLM's JSON |
 | **PyYAML** | Weights and keywords in one human-editable config file |
 | **phonenumbers** | Google's phone validation library, far more reliable than a regex |
@@ -129,17 +128,6 @@ Without a key the app runs in **offline mode** with rule-based explanations.
 ```bash
 uv run pytest
 ```
-
-### Deploy to Streamlit Community Cloud
-
-1. Push the repo to GitHub (public).
-2. Go to [share.streamlit.io](https://share.streamlit.io), click **Create app**, pick the repo, branch `main`, main file `app.py`. Streamlit Cloud installs from `requirements.txt`.
-3. Under **Advanced settings → Secrets**, add:
-   ```toml
-   LLM_PROVIDER = "gemini"
-   GEMINI_API_KEY = "your-key"
-   ```
-4. Deploy, then put the app URL in the "Live demo" link at the top of this README.
 
 ## Sample test cases
 

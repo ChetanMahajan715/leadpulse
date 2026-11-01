@@ -1,7 +1,6 @@
 """LeadPulse Streamlit app: score a lead, bulk-score a CSV, see how scoring works."""
 
 import html
-import os
 import re
 from pathlib import Path
 
@@ -28,16 +27,6 @@ st.set_page_config(page_title="LeadPulse · AI Lead Scoring", page_icon=str(ROOT
 # Strip CSS comments: the brand kit's header comment contains a literal "</style>" that would end the tag early.
 _css = re.sub(r"/\*.*?\*/", "", (ROOT / "assets" / "style.css").read_text(encoding="utf-8"), flags=re.S)
 st.html(f"<style>{_css}</style>")
-
-
-def _secrets_to_env() -> None:
-    """On Streamlit Cloud the keys live in st.secrets; locally they come from .env."""
-    try:
-        for name in ("LLM_PROVIDER", "GEMINI_API_KEY", "GROQ_API_KEY", "LLM_MODEL"):
-            if name in st.secrets:
-                os.environ.setdefault(name, str(st.secrets[name]))
-    except Exception:  # no secrets.toml at all
-        pass
 
 
 def _choice(label: str, options: list[str], key: str) -> str:
@@ -292,7 +281,6 @@ def _how_tab() -> None:
     st.caption(f"Scoring version {config['scoring_version']} · read live from scoring_config.yaml")
 
 
-_secrets_to_env()
 _sidebar()
 st.title("LeadPulse")
 st.caption("Explainable lead scoring: rules score, AI explains.")
