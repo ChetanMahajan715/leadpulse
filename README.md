@@ -96,7 +96,7 @@ The dependency map was checked against the code with [graphify](https://github.c
 | **Plotly** | One clear points-vs-max bar chart |
 | **pandas** | Bulk CSV results table and export |
 | **google-genai / groq** | Gemini (default) or Groq for explanations, switchable in `.env` |
-| **pytest** | 75 tests, no real API calls |
+| **pytest** | 107 tests, no real API calls |
 
 ## Setup
 
@@ -181,7 +181,7 @@ leadpulse/
 │   ├── cache.py                on-disk LLM cache
 │   └── bulk.py                 CSV validation + batch scoring
 ├── data/                       lead_template.csv, sample_leads.csv
-├── tests/                      75 pytest tests (cases.py holds the sample leads)
+├── tests/                      107 pytest tests (cases.py holds the sample leads)
 ├── docs/                       METHODOLOGY.md, TEST_CASES.md, DEMO_SCRIPT.md, screenshots/
 ├── assets/                     brand kit: logos, icon, style.css
 ├── .streamlit/config.toml      brand theme

@@ -152,7 +152,8 @@ If any data-quality flag exists, the action becomes "Verify contact details (*fl
 - Inputs are normalised first (trim, lowercase, collapse spaces, strip `http(s)://` and `www.`), so formatting noise cannot change the score.
 - Every result carries `scoring_version` (1.0.0) and `input_hash` (SHA-256 of the normalised input).
 - The LLM receives the finished result and must return strict JSON (validated with Pydantic). It runs at temperature 0. Invalid JSON is retried once.
-- **Guardrail:** if the LLM's text states a different score or a different Hot/Warm/Cold class, its answer is discarded and a rule-based template is used.
+- **Guardrail:** if the LLM's text states a different score or a different Hot/Warm/Cold class (including wordings like "a rating of 72", "seventy-two out of a hundred" or "this Warm prospect"), its answer is discarded and a rule-based template is used. As a catch-all, any number too large to be one factor's points must appear in the data the LLM was given. The check is English pattern matching, so an unusual paraphrase of a small number could still pass; the system prompt forbids it as well.
+- LLM text is shown literally, with Markdown escaped, so a hostile requirement echoed by the LLM cannot load images or links.
 - LLM answers are cached on disk, keyed by input hash + scoring version + prompt version + model, so the same lead always gets the same explanation and no repeat API calls.
 - With no API key, or on any API error, the app works fully offline with template explanations.
 

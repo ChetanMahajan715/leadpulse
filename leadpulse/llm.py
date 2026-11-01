@@ -24,11 +24,31 @@ TIMEOUT_SECONDS = 20
 Settings = tuple[str, str, str]  # (provider, api_key, model)
 LLMCall = Callable[[str, str, Settings], str]
 
+_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
+_ONES = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
+_TEENS = {"ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+          "seventeen": 17, "eighteen": 18, "nineteen": 19}
+_TENS_WORDS = re.compile(rf"\b({'|'.join(_TENS)})(?:[\s-]+({'|'.join(_ONES)}))?\b")
+# Standalone "one" is left alone: "one of the best" is not a number claim.
+_SMALL_WORDS = re.compile(rf"\b({'|'.join([*_TEENS, *(w for w in _ONES if w != 'one')])})\b")
+_HUNDRED = re.compile(r"\b(?:(?:a|one)\s+)?hundred\b")
+
+_OUT_OF_100 = re.compile(r"\b(\d{1,3})\s*(?:/|out of|of)\s*100\b")
 _SCORE_MENTIONS = (
-    re.compile(r"\bscor\w*\s+(?:of\s+|is\s+|was\s+|at\s+)?(\d{1,3})\b", re.IGNORECASE),
-    re.compile(r"\b(\d{1,3})\s*(?:/|out of)\s*100\b", re.IGNORECASE),
+    _OUT_OF_100,
+    # "score of 72", "rated 72", "Score: 72". "15 of 25" is a factor, and "confidence score" is not the score.
+    re.compile(r"(?<!confidence )\b(?:scor(?:e|es|ed|ing)|rating|rated|grade[ds]?)\b"
+               r"(?:[\s:=]+(?:of|is|was|at|to|about|around|roughly|approximately|just|only|a|an|stands|sits|comes"
+               r"|came|in|reached|overall|now))*[\s:=]+(\d{1,3})\b(?!\s*(?:/|of|out of)\s*(?!100\b)\d)"),
+    re.compile(r"\b(\d{1,3})[\s-]*(?:points?|pts)\s+(?:overall|in total|total)\b"),
+    re.compile(r"\b(?:overall|total|final)\s+(?:of\s+)?(\d{1,3})\b"),
+    re.compile(r"\b(\d{1,3})(?:%|[\s-]*point)?[\s-]*(?:lead|prospect|score|rating)\b"),
 )
-_CLASS_MENTION = re.compile(r"\b(hot|warm|cold)\s+lead", re.IGNORECASE)
+_CLASS_MENTIONS = (
+    re.compile(r"\b(hot|warm|cold)[\s-]+(?:lead|prospect|opportunity|score|rating|class|classification|category|tier)\b"),
+    re.compile(r"\b(?:classif\w+|categori[sz]\w+|labell?ed|rated|marked|class|lead|prospect)"
+               r"(?:\s+(?:is|as|was|of|a))*[\s:]+[\"']?(hot|warm|cold)\b(?!\s+(?:outreach|call|calling|email|list))"),
+)
 
 
 def llm_settings() -> Settings | None:
@@ -75,11 +95,34 @@ def call_llm(system: str, user: str, settings: Settings) -> str:
     return response.choices[0].message.content or ""
 
 
-def contradicts_result(text: str, result: ScoreResult) -> bool:
-    """True if text states a score or Hot/Warm/Cold class different from the computed one."""
+def _words_to_digits(text: str) -> str:
+    """Rewrite spelled-out numbers ('seventy-two', 'a hundred') as digits."""
+    text = _HUNDRED.sub("100", text)
+    text = _TENS_WORDS.sub(lambda m: str(_TENS[m[1]] + _ONES.get(m[2], 0)), text)
+    return _SMALL_WORDS.sub(lambda m: str(_TEENS.get(m[1]) or _ONES[m[1]]), text)
+
+
+def contradicts_result(text: str, result: ScoreResult, context: str) -> bool:
+    """True if text states a score or Hot/Warm/Cold class different from the computed one.
+
+    context is the prompt the LLM was given. As a catch-all for wordings the patterns miss, a number
+    too large to be one factor's points must come from that context.
+    Limit: these are English patterns, so a paraphrase below that size can still slip; the prompt forbids it too.
+    """
+    text = _words_to_digits(text.lower())
     scores = {int(m) for pattern in _SCORE_MENTIONS for m in pattern.findall(text)}
-    classes = {m.capitalize() for m in _CLASS_MENTION.findall(text)}
-    return bool(scores - {result.score}) or bool(classes - {result.classification})
+    classes = {m.capitalize() for pattern in _CLASS_MENTIONS for m in pattern.findall(text)}
+    if scores - {result.score} or classes - {result.classification}:
+        return True
+    largest_factor = max(f.max_points for f in result.factors)
+    known = {int(n) for n in re.findall(r"\d+", context)} | {result.score, result.confidence}
+    numbers = {int(n) for n in re.findall(r"\d+", _OUT_OF_100.sub("", text))}
+    return any(largest_factor < n <= 100 and n not in known for n in numbers)
+
+
+def _is_acceptable(insights: LLMInsights, result: ScoreResult, context: str) -> bool:
+    text = f"{insights.explanation} {insights.quality_note} {insights.next_action}"
+    return not contradicts_result(text, result, context)
 
 
 def template_insights(lead: LeadInput, result: ScoreResult) -> LLMInsights:
@@ -132,11 +175,16 @@ def generate_insights(lead: LeadInput, result: ScoreResult, call: LLMCall = call
         return template_insights(lead, result)
 
     key = cache.cache_key(result.input_hash, result.scoring_version, PROMPT_VERSION, settings[2])
+    user = build_user_prompt(lead, result)
     cached = cache.get(key)
     if cached is not None:
-        return LLMInsights.model_validate(cached)
+        try:
+            insights = LLMInsights.model_validate(cached)
+        except ValidationError:
+            insights = None  # corrupt entry: ask the LLM again
+        if insights is not None and _is_acceptable(insights, result, user):
+            return insights
 
-    user = build_user_prompt(lead, result)
     for _ in range(2):  # one retry on invalid JSON
         try:
             insights = LLMInsights.model_validate_json(call(SYSTEM_PROMPT, user, settings))
@@ -144,7 +192,7 @@ def generate_insights(lead: LeadInput, result: ScoreResult, call: LLMCall = call
             continue
         except Exception:  # network, auth, quota, timeout: the app must keep working offline
             break
-        if contradicts_result(f"{insights.explanation} {insights.quality_note} {insights.next_action}", result):
+        if not _is_acceptable(insights, result, user):
             break
         insights = insights.model_copy(update={"source": "llm"})
         cache.put(key, insights.model_dump())

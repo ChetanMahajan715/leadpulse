@@ -3,6 +3,7 @@ import json
 import pytest
 
 from leadpulse import cache, llm
+from leadpulse.prompts import PROMPT_VERSION, build_user_prompt
 from leadpulse.scoring import score_lead
 from tests.cases import MISSING, SAMPLE
 
@@ -89,10 +90,83 @@ def test_guardrail_rejects_a_different_score_or_class(bad):
     assert llm.generate_insights(SAMPLE, score_lead(SAMPLE), call=fake).source == "template"
 
 
-def test_guardrail_allows_factor_points_and_confidence():
-    text = "It scored 84/100: decision authority earned 20 of 20 and confidence is 90%."
-    fake = FakeLLM(json.dumps({**GOOD, "explanation": text}))
+@pytest.mark.parametrize("bad", [
+    # Found by independent QA: all of these were accepted for a lead scored 84 Hot.
+    "This lead has a rating of 72.",
+    "It earned 72 points overall.",
+    "We put it at seventy-two out of a hundred.",
+    "This Warm prospect needs nurturing.",
+    # Close variants of the same mistakes.
+    "It is rated 72.",
+    "A 72-point lead.",
+    "Overall it comes in at a solid 72.",
+    "The final score stands at 72.",
+    "A score of eighty one fits this lead.",
+    "It earned 20 points in total.",
+    "Score: 72.",
+    "The lead is warm.",
+    "It was classified as cold.",
+    "Classification: Warm.",
+])
+def test_guardrail_rejects_other_wordings_of_a_wrong_score_or_class(bad):
+    fake = FakeLLM(json.dumps({**GOOD, "explanation": bad}))
+    assert llm.generate_insights(SAMPLE, score_lead(SAMPLE), call=fake).source == "template"
+
+
+@pytest.mark.parametrize("field", ["quality_note", "next_action"])
+def test_guardrail_also_covers_the_other_text_fields(field):
+    fake = FakeLLM(json.dumps({**GOOD, field: "This is a 72 out of 100 lead."}))
+    assert llm.generate_insights(SAMPLE, score_lead(SAMPLE), call=fake).source == "template"
+
+
+@pytest.mark.parametrize("good", [
+    "It scored 84/100: decision authority earned 20 of 20 and confidence is 90%.",
+    "Buying intent scored 15 of 25 and company size 15 of 15.",
+    "The confidence score of 90 reflects two data-quality flags.",
+    "It has a score of eighty-four, which is a Hot lead.",
+    "ABC Technologies has 50-100 employees, midpoint 75, and came from a website form.",
+    "Verify the email, then call within 24 hours.",
+    "Unlike a cold outreach contact, this lead came through the website.",
+    "It scores well on 7 parameters overall.",
+    # Real Gemini output for this lead, saved from a live run.
+    "Rahul Sharma received a strong hot score of 84 due to his top-level decision-making authority "
+    "as Founder of ABC Technologies, a high-fit IT Services company of 50-100 employees in Bangalore.",
+])
+def test_guardrail_keeps_answers_that_do_not_contradict(good):
+    fake = FakeLLM(json.dumps({**GOOD, "explanation": good}))
     assert llm.generate_insights(SAMPLE, score_lead(SAMPLE), call=fake).source == "llm"
+
+
+def test_a_number_typed_in_the_lead_does_not_excuse_a_wrong_score():
+    lead = SAMPLE.model_copy(update={"requirement": "CRM software for 72 users"})
+    result = score_lead(lead)
+    fake = FakeLLM(json.dumps({**GOOD, "explanation": f"It serves 72 users and scored {result.score}."}))
+    assert llm.generate_insights(lead, result, call=fake).source == "llm"
+    wrong = FakeLLM(json.dumps({**GOOD, "explanation": "This lead has a rating of 72."}))
+    other = lead.model_copy(update={"name": "Different Person"})
+    assert llm.generate_insights(other, score_lead(other), call=wrong).source == "template"
+
+
+def test_template_text_never_trips_the_guardrail():
+    for lead in (SAMPLE, MISSING):
+        result = score_lead(lead)
+        insights = llm.template_insights(lead, result)
+        text = f"{insights.explanation} {insights.quality_note} {insights.next_action}"
+        assert not llm.contradicts_result(text, result, build_user_prompt(lead, result))
+
+
+def test_cached_answer_that_breaks_the_guardrail_is_not_served():
+    result = score_lead(SAMPLE)
+    key = cache.cache_key(result.input_hash, result.scoring_version, PROMPT_VERSION, llm.llm_settings()[2])
+    cache.put(key, {**GOOD, "explanation": "This lead has a rating of 72.", "source": "llm"})
+    assert llm.generate_insights(SAMPLE, result, call=FakeLLM(TimeoutError())).source == "template"
+
+
+def test_corrupt_cache_entry_does_not_crash():
+    result = score_lead(SAMPLE)
+    key = cache.cache_key(result.input_hash, result.scoring_version, PROMPT_VERSION, llm.llm_settings()[2])
+    cache.put(key, {"explanation": 1})
+    assert llm.generate_insights(SAMPLE, result, call=FakeLLM(TimeoutError())).source == "template"
 
 
 def test_same_lead_twice_hits_the_cache():

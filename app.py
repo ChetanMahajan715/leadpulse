@@ -13,6 +13,7 @@ from leadpulse.bulk import BulkError, score_csv, template_csv
 from leadpulse.config_loader import load_config
 from leadpulse.llm import generate_insights, llm_status
 from leadpulse.models import FIELD_LABELS, SAMPLE_LEAD_FIELDS, LeadInput, LLMInsights, ScoreResult
+from leadpulse.normalize import escape_markdown
 from leadpulse.scoring import compare_factors, score_lead
 
 ROOT = Path(__file__).parent
@@ -148,12 +149,12 @@ def _render_result(lead: LeadInput, result: ScoreResult, insights: LLMInsights) 
         st.success("No data-quality issues found.")
 
     st.markdown("#### Scoring explanation")
-    st.write(insights.explanation)
+    st.markdown(escape_markdown(insights.explanation))
     if insights.source == "template":
         st.caption("Offline mode (rule-based explanations)")
 
     st.markdown("#### Recommended next action")
-    st.info(insights.next_action)
+    st.info(escape_markdown(insights.next_action))
 
     st.markdown("#### AI follow-up email")
     st.code(f"Subject: {insights.follow_up_email.subject}\n\n{insights.follow_up_email.body}",
@@ -238,8 +239,8 @@ def _bulk_tab() -> None:
     if st.button("Explain this lead"):
         lead, result = bulk.results[pick]
         insights = generate_insights(lead, result)
-        st.write(insights.explanation)
-        st.info(insights.next_action)
+        st.markdown(escape_markdown(insights.explanation))
+        st.info(escape_markdown(insights.next_action))
         st.code(f"Subject: {insights.follow_up_email.subject}\n\n{insights.follow_up_email.body}",
                 language=None, wrap_lines=True)
 

@@ -53,6 +53,11 @@ def contains_any(text: str, keywords: list[str]) -> list[str]:
     return found
 
 
+def escape_markdown(text: str) -> str:
+    """Backslash-escape Markdown so untrusted text (LLM output) shows literally: no images, links or formatting."""
+    return re.sub(r"([\\`*_{}\[\]()#+\-.!|<>~$:&/])", r"\\\1", text)
+
+
 def normalize_lead(lead: LeadInput) -> dict[str, str]:
     """Return the cleaned lead used for matching and hashing."""
     normalized = {field: clean(value) for field, value in lead.model_dump().items()}

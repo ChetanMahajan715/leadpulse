@@ -5,6 +5,7 @@ from leadpulse.normalize import (
     clean,
     contains_any,
     email_domain,
+    escape_markdown,
     input_hash,
     normalize_lead,
     parse_company_size,
@@ -49,6 +50,16 @@ def test_contains_any_uses_word_boundaries_and_symbols():
     assert contains_any("need it asap", ["asap", "soon"]) == ["asap"]
     assert contains_any("users and partners", ["rs", "partner"]) == []
     assert contains_any("budget ₹5 lakh", ["₹", "lakh"]) == ["₹", "lakh"]
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("![i](http://evil.test/x.png)", r"\!\[i\]\(http\:\/\/evil\.test\/x\.png\)"),
+    ("<b>hi</b> & *bold*", r"\<b\>hi\<\/b\> \& \*bold\*"),
+    (":red[x] $y$ `z`", r"\:red\[x\] \$y\$ \`z\`"),
+    ("Plain words stay plain", "Plain words stay plain"),
+])
+def test_escape_markdown_makes_ai_text_literal(text, expected):
+    assert escape_markdown(text) == expected
 
 
 def test_normalize_and_hash_ignore_formatting_noise():

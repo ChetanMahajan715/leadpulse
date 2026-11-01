@@ -23,7 +23,7 @@ Points order: Authority / Intent / Size / Industry / Source / Contact / Location
 | Consistency | Every lead scored 100 times gives identical score, class, factors and hash. Extra spaces, capitals and `https://www.` do not change the score. |
 | Bounds | Score always 0-100, equal to the sum of factors; no parameter exceeds its max (including empty and 5,000-character input) |
 | Bulk CSV | Valid file ranked Hot first, case-insensitive columns, missing columns error, wrong-width and empty rows skipped and reported, 500-row cap, empty / binary file |
-| LLM fallback | No API key uses templates; invalid JSON retried once; API errors fall back; guardrail rejects a wrong score or class; same lead twice hits the cache (all mocked, no real API calls) |
+| LLM fallback | No API key uses templates; invalid JSON retried once; API errors fall back; guardrail rejects many wordings of a wrong score or class and keeps honest answers; old or corrupt cache entries are not trusted; same lead twice hits the cache (all mocked, no real API calls) |
 
 ## Bulk demo file
 
