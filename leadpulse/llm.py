@@ -16,7 +16,8 @@ from leadpulse.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
 
 load_dotenv()
 
-DEFAULT_MODELS = {"gemini": "gemini-flash-latest", "groq": "openai/gpt-oss-20b"}
+# Flash-Lite: fast, generous free tier and less often overloaded than Flash; enough for short explanations.
+DEFAULT_MODELS = {"gemini": "gemini-flash-lite-latest", "groq": "openai/gpt-oss-20b"}
 PROVIDER_NAMES = {"gemini": "Gemini", "groq": "Groq"}
 TIMEOUT_SECONDS = 20
 
